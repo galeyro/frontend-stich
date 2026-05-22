@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FluxCD | Declarative GitOps for Kubernetes</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&amp;family=Geist:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-container": "#00ddd6",
+                        "on-surface-variant": "#c1c6d7",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-container-highest": "#353534",
+                        "on-surface": "#e5e2e1",
+                        "surface-dim": "#131313",
+                        "outline-variant": "#414754",
+                        "on-secondary-container": "#005d5a",
+                        "secondary-fixed": "#47faf3",
+                        "tertiary": "#c6c6c7",
+                        "primary-fixed-dim": "#aec6ff",
+                        "background": "#131313",
+                        "primary-container": "#0070f3",
+                        "tertiary-fixed-dim": "#c6c6c7",
+                        "on-primary-container": "#ffffff",
+                        "tertiary-container": "#757676",
+                        "surface-tint": "#aec6ff",
+                        "on-secondary-fixed-variant": "#00504d",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-fixed": "#00201f",
+                        "primary": "#aec6ff",
+                        "secondary": "#47faf3",
+                        "on-tertiary-container": "#ffffff",
+                        "surface-container-high": "#2a2a2a",
+                        "on-tertiary-fixed": "#1a1c1c",
+                        "surface-variant": "#353534",
+                        "on-error": "#690005",
+                        "on-primary-fixed-variant": "#004397",
+                        "on-background": "#e5e2e1",
+                        "on-tertiary-fixed-variant": "#454747",
+                        "inverse-primary": "#0059c5",
+                        "on-primary": "#002e6b",
+                        "tertiary-fixed": "#e2e2e2",
+                        "outline": "#8b90a0",
+                        "surface-container-low": "#1c1b1b",
+                        "surface": "#131313",
+                        "on-secondary": "#003735",
+                        "inverse-surface": "#e5e2e1",
+                        "surface-bright": "#3a3939",
+                        "surface-container-lowest": "#0e0e0e",
+                        "inverse-on-surface": "#313030",
+                        "on-primary-fixed": "#001a43",
+                        "error": "#ffb4ab",
+                        "error-container": "#93000a",
+                        "secondary-fixed-dim": "#00ddd6",
+                        "on-tertiary": "#2f3131",
+                        "surface-container": "#201f1f"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "base": "8px",
+                        "margin": "48px",
+                        "gutter": "24px",
+                        "container-max": "1200px"
+                    },
+                    "fontFamily": {
+                        "headline-lg-mobile": ["Geist"],
+                        "body-lg": ["Geist"],
+                        "label-md": ["JetBrains Mono"],
+                        "display-lg": ["Geist"],
+                        "headline-md": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "body-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "headline-lg-mobile": ["28px", {"lineHeight": "1.2", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.4", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "display-lg": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.04em", "fontWeight": "700"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0e0e0e;
+            color: #e5e2e1;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            min-height: max(884px, 100dvh);
+        }
+
+        /* Perspective Grid Overlay */
+        .perspective-grid {
+            position: fixed;
+            inset: 0;
+            background-image: 
+                linear-gradient(to right, rgba(174, 198, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(174, 198, 255, 0.05) 1px, transparent 1px);
+            background-size: 60px 60px;
+            perspective: 1000px;
+            transform-origin: center;
+            transform: perspective(1000px) rotateX(20deg) translateY(-100px) scale(1.5);
+            mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(174, 198, 255, 0.3);
+            transform: translateY(-4px);
+        }
+
+        .luminous-stroke {
+            border-top: 1px solid rgba(174, 198, 255, 0.2);
+            border-left: 1px solid rgba(174, 198, 255, 0.1);
+        }
+
+        /* Scroll Reveal */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+            will-change: transform, opacity;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .glow-primary {
+            filter: drop-shadow(0 0 15px rgba(174, 198, 255, 0.3));
+        }
+
+        .timeline-line {
+            background: linear-gradient(to bottom, transparent, #aec6ff, transparent);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(1deg); }
+        }
+
+        .floating-yaml {
+            animation: float 8s ease-in-out infinite;
+            font-family: 'JetBrains Mono', monospace;
+            pointer-events: none;
+            user-select: none;
+        }
+
+        .code-block {
+            font-family: 'JetBrains Mono', monospace;
+            background: #000000;
+        }
+
+        /* Premium Transitions */
+        button, a {
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .interactive-glow {
+            position: fixed;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(174, 198, 255, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+            mix-blend-mode: screen;
+            transition: width 0.3s, height 0.3s;
+        }
+
+        canvas#particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+        
+        .hero-title-pulse {
+            animation: text-pulse 4s ease-in-out infinite;
+        }
+        
+        @keyframes text-pulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(174, 198, 255, 0); }
+            50% { text-shadow: 0 0 30px rgba(174, 198, 255, 0.3); }
+        }
+    </style>
+</head>
+<body class="font-body-md text-body-md">
+<div class="interactive-glow" id="mouse-glow"></div>
+<div class="perspective-grid"></div>
+<!-- Top Navigation Shell -->
+<header class="fixed top-0 w-full z-50 bg-surface/30 backdrop-blur-xl border-b border-white/10 shadow-[0_0_40px_rgba(174,198,255,0.05)]">
+<div class="flex justify-between items-center max-w-container-max mx-auto px-6 h-20">
+<div class="flex items-center gap-2 group cursor-pointer">
+<span class="material-symbols-outlined text-primary group-hover:rotate-180 transition-transform duration-700" style="font-variation-settings: 'FILL' 1;">hub</span>
+<span class="font-headline-md text-headline-md font-bold tracking-tight text-on-surface">FluxCD</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="active:scale-95 transition-transform hover:text-primary">
+<span class="material-symbols-outlined text-on-surface-variant">menu</span>
+</button>
+</div>
+</div>
+</header>
+
+<main>
+<!-- HERO SECTION -->
+<section class="relative min-h-screen flex flex-col justify-center items-center px-6 pt-20 overflow-hidden">
+<canvas id="particles"></canvas>
+<!-- Glow Particles (Simulated) -->
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 blur-[120px] rounded-full animate-pulse"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 blur-[120px] rounded-full animate-pulse" style="animation-delay: 2s"></div>
+<!-- Floating YAML Snippets -->
+<div class="absolute top-40 right-[15%] floating-yaml opacity-20 hidden md:block">
+<pre class="code-block p-4 rounded-xl border border-white/10 text-[11px] text-secondary">kind: Kustomization
+metadata:
+  name: podinfo
+spec:
+  interval: 5m
+  path: ./deploy</pre>
+</div>
+<div class="absolute bottom-40 left-[10%] floating-yaml opacity-10 hidden md:block" style="animation-delay: -3s">
+<pre class="code-block p-4 rounded-xl border border-white/10 text-[11px] text-primary">apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: flux-system
+spec:
+  interval: 1m</pre>
+</div>
+<div class="relative z-10 text-center max-w-2xl reveal">
+<h1 class="font-display-lg text-[64px] md:text-[96px] mb-4 text-on-surface tracking-tighter hero-title-pulse">
+                    Flux<span class="text-primary">CD</span>
+</h1>
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-secondary mb-6 tracking-tight">
+                    Declarative continuous delivery for Kubernetes
+                </h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-10 leading-relaxed max-w-lg mx-auto">
+                    The GitOps way to manage your infrastructure. Automate application updates and infrastructure management with Flux.
+                </p>
+<div class="flex flex-col gap-4 w-full px-4">
+<button class="w-full py-4 bg-primary text-on-primary font-bold rounded-xl active:scale-95 transition-all hover:shadow-[0_0_30px_rgba(174,198,255,0.4)] hover:-translate-y-1">
+                        Explore Architecture
+                    </button>
+<button class="w-full py-4 bg-transparent border border-white/20 text-on-surface font-bold rounded-xl active:scale-95 transition-all hover:bg-white/5 hover:border-white/40">
+                        View GitOps Flow
+                    </button>
+</div>
+</div>
+</section>
+
+<!-- WHAT IS FLUXCD: CARDS -->
+<section class="py-margin px-6 relative z-10">
+<div class="reveal max-w-container-max mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-12 text-center">Core Pillars</h2>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- GitOps -->
+<div class="glass-card luminous-stroke p-8 rounded-xl group">
+<span class="material-symbols-outlined text-secondary text-4xl mb-4 group-hover:scale-110 transition-transform">account_tree</span>
+<h3 class="font-headline-md text-headline-md mb-2">GitOps Driven</h3>
+<p class="text-on-surface-variant">The desired state of your cluster is defined in Git. Flux ensures your cluster matches the source.</p>
+</div>
+<!-- Reconciliation -->
+<div class="glass-card luminous-stroke p-8 rounded-xl group">
+<span class="material-symbols-outlined text-secondary text-4xl mb-4 group-hover:rotate-180 transition-transform duration-1000">sync</span>
+<h3 class="font-headline-md text-headline-md mb-2">Reconciliation</h3>
+<p class="text-on-surface-variant">Continuous drift detection. If someone changes the cluster manually, Flux changes it back.</p>
+</div>
+<!-- Automation -->
+<div class="glass-card luminous-stroke p-8 rounded-xl group">
+<span class="material-symbols-outlined text-secondary text-4xl mb-4 group-hover:translate-x-2 transition-transform">auto_mode</span>
+<h3 class="font-headline-md text-headline-md mb-2">Automation</h3>
+<p class="text-on-surface-variant">Automated image updates and deployment pipelines. Move from code to prod without touching kubectl.</p>
+</div>
+<!-- Rollback -->
+<div class="glass-card luminous-stroke p-8 rounded-xl group">
+<span class="material-symbols-outlined text-secondary text-4xl mb-4 group-hover:-rotate-45 transition-transform">history</span>
+<h3 class="font-headline-md text-headline-md mb-2">Instant Rollback</h3>
+<p class="text-on-surface-variant">Reverting a change is as simple as a Git revert. Fast, safe, and fully audited.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- ARCHITECTURE: VISUAL DIAGRAM -->
+<section class="py-margin px-6 bg-surface-container-lowest/50 relative overflow-hidden">
+<div class="reveal max-w-container-max mx-auto text-center">
+<span class="font-label-md text-label-md text-primary uppercase tracking-widest mb-4 block">The Engine</span>
+<h2 class="font-headline-lg text-headline-lg mb-12">The Controller Mesh</h2>
+<div class="relative flex flex-col items-center gap-8 py-10">
+<!-- Source Controller -->
+<div class="glass-card p-4 rounded-xl border-primary/30 w-48 z-10 hover:border-primary">
+<p class="font-label-md text-primary">Source Controller</p>
+</div>
+<div class="w-px h-12 timeline-line"></div>
+<!-- Middle Row -->
+<div class="grid grid-cols-2 gap-4 w-full max-w-md">
+<div class="glass-card p-4 rounded-xl border-secondary/30 hover:border-secondary">
+<p class="font-label-md text-secondary">Kustomize</p>
+</div>
+<div class="glass-card p-4 rounded-xl border-secondary/30 hover:border-secondary">
+<p class="font-label-md text-secondary">Helm</p>
+</div>
+</div>
+<div class="w-px h-12 timeline-line"></div>
+<!-- Automation -->
+<div class="glass-card p-4 rounded-xl border-primary/30 w-48 hover:border-primary">
+<p class="font-label-md text-primary">Image Automation</p>
+</div>
+<div class="w-px h-12 timeline-line"></div>
+<!-- Notification -->
+<div class="glass-card p-4 rounded-xl border-white/20 w-48 hover:border-white">
+<p class="font-label-md text-on-surface">Notification</p>
+</div>
+<!-- Background Image -->
+<div class="absolute inset-0 -z-10 opacity-10 flex items-center justify-center">
+<img class="w-full h-full object-cover scale-110" data-alt="Futuristic technical blueprint" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDumedYHAIkJUjZ7nrtL7Yp1gheNPStAx-VihXobdOQ0Pz0hOec1zYpAmRG5K-MLxf-Eow67ycv0QFU4uTeqE-sdEPqpYuEjASyikhF-iaJbxhabaCONTsqz3U5PKlslkPT_KqXDu87t1YiD0MB0Qgo-g4PuuKsjC8ptsCIOE29UqO-AVI4Yr5-yWQ6G-g-ZC-10SDECYKyJaaxNHdCTGH47h1qi9kVD3sBjAs5iD_jsUyyFjQlHvaqc_sZl2NqbUj48eEkB95qwDJp"/>
+</div>
+</div>
+</div>
+</section>
+
+<!-- PULL-BASED MODEL TIMELINE -->
+<section class="py-margin px-6">
+<div class="reveal max-w-container-max mx-auto">
+<h2 class="font-headline-lg text-headline-lg mb-16 text-center">Pull-Based Workflow</h2>
+<div class="relative pl-12 space-y-16 max-w-xl mx-auto">
+<div class="absolute left-6 top-0 bottom-0 w-px timeline-line"></div>
+<!-- Commit -->
+<div class="relative reveal">
+<div class="absolute -left-[30px] top-1 w-4 h-4 rounded-full bg-primary glow-primary"></div>
+<h4 class="font-headline-md text-on-surface">Commit</h4>
+<p class="text-on-surface-variant">Developer pushes manifest changes to Git (GitHub, GitLab, OCI).</p>
+</div>
+<!-- Detect -->
+<div class="relative reveal">
+<div class="absolute -left-[30px] top-1 w-4 h-4 rounded-full bg-primary glow-primary"></div>
+<h4 class="font-headline-md text-on-surface">Detect</h4>
+<p class="text-on-surface-variant">Flux Source Controller detects the new version and pulls the artifacts.</p>
+</div>
+<!-- Validate -->
+<div class="relative reveal">
+<div class="absolute -left-[30px] top-1 w-4 h-4 rounded-full bg-primary glow-primary"></div>
+<h4 class="font-headline-md text-on-surface">Validate &amp; Apply</h4>
+<p class="text-on-surface-variant">Manifests are validated against K8s API and applied securely within the cluster.</p>
+</div>
+<!-- Reconcile -->
+<div class="relative reveal">
+<div class="absolute -left-[30px] top-1 w-4 h-4 rounded-full bg-secondary glow-primary shadow-[0_0_20px_#47faf3]"></div>
+<h4 class="font-headline-md text-on-surface">Reconcile</h4>
+<p class="text-on-surface-variant">Continuous loop monitors for drift, ensuring 100% sync integrity.</p>
+</div>
+</div>
+</div>
+</section>
+
+<!-- COMPARISON SECTION -->
+<section class="py-margin px-6 bg-surface-container-low/30 backdrop-blur-sm">
+<div class="reveal max-w-container-max mx-auto">
+<h2 class="font-headline-lg text-headline-lg mb-12 text-center">Engineered for Precision</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<div class="p-6 rounded-xl border border-primary/40 bg-primary/5 hover:bg-primary/10 transition-colors">
+<p class="font-label-md text-primary mb-4">FluxCD</p>
+<ul class="text-[14px] space-y-3">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span> Lightweight</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span> Pull-first</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-primary">check_circle</span> Git Native</li>
+</ul>
+</div>
+<div class="p-6 rounded-xl border border-white/10 bg-white/5 opacity-80 hover:opacity-100 transition-opacity">
+<p class="font-label-md text-on-surface-variant mb-4">ArgoCD</p>
+<ul class="text-[14px] space-y-3">
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">radio_button_unchecked</span> UI Heavy</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">radio_button_unchecked</span> Complex Auth</li>
+<li class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px]">radio_button_unchecked</span> App-of-apps</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+
+<!-- DEVOPS CULTURE / MANIFESTO -->
+<section class="py-margin px-6 relative overflow-hidden">
+<div class="reveal max-w-container-max mx-auto text-center">
+<p class="font-label-md text-secondary tracking-[0.3em] mb-10 opacity-70">MANIFESTO</p>
+<blockquote class="font-display-lg text-[32px] md:text-[54px] leading-tight italic font-semibold">
+                    "Infrastructure is code. Code is truth. Git is the <span class="text-primary hero-title-pulse">Source of Truth.</span>"
+                </blockquote>
+<div class="mt-16 h-px w-32 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto"></div>
+</div>
+</section>
+
+<!-- OPEN SOURCE / CNCF -->
+<section class="py-margin px-6 bg-surface-container-highest/20">
+<div class="reveal max-w-container-max mx-auto flex flex-col items-center gap-10">
+<div class="flex items-center gap-8 flex-wrap justify-center grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all duration-700">
+<div class="flex flex-col items-center">
+<span class="font-headline-md font-bold tracking-tighter">CNCF</span>
+<span class="font-label-md text-[10px]">GRADUATED</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-headline-md font-bold tracking-tighter">APACHE 2.0</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="font-headline-md font-bold tracking-tighter">KUBERNETES</span>
+</div>
+</div>
+<div class="flex gap-4">
+<span class="px-6 py-2 rounded-full border border-secondary/30 bg-secondary/5 text-secondary font-label-md text-xs hover:border-secondary transition-colors">Cloud Native</span>
+<span class="px-6 py-2 rounded-full border border-primary/30 bg-primary/5 text-primary font-label-md text-xs hover:border-primary transition-colors">OSS Project</span>
+</div>
+</div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="py-[120px] px-6 text-center relative">
+<div class="reveal max-w-container-max mx-auto">
+<h2 class="font-display-lg text-headline-lg-mobile md:text-display-lg mb-8 tracking-tight">
+                    GitOps Lightweight, Secure &amp; Scalable
+                </h2>
+<p class="font-body-lg text-on-surface-variant mb-12 max-w-xl mx-auto">
+                    Join thousands of organizations managing infrastructure at scale with the industry standard for declarative CD.
+                </p>
+<div class="flex flex-col gap-4 max-w-sm mx-auto">
+<button class="w-full py-5 bg-primary text-on-primary font-bold rounded-xl text-lg shadow-[0_0_50px_rgba(174,198,255,0.2)] hover:shadow-[0_0_60px_rgba(174,198,255,0.4)] hover:-translate-y-1 active:scale-95 transition-all">
+                        Get Started Today
+                    </button>
+<button class="w-full py-5 border border-white/10 bg-white/5 rounded-xl font-bold hover:bg-white/10 hover:border-white/30 active:scale-95 transition-all">
+                        Read Documentation
+                    </button>
+</div>
+</div>
+</section>
+</main>
+
+<!-- FOOTER -->
+<footer class="bg-surface-container-lowest py-margin border-t border-outline-variant/10">
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter max-w-container-max mx-auto px-6">
+<div class="mb-12">
+<div class="flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-primary">hub</span>
+<span class="font-headline-md font-bold text-on-surface">FluxCD</span>
+</div>
+<p class="text-on-surface-variant font-body-md text-sm leading-relaxed">© 2024 FluxCD Project Authors.<br/>CNCF Graduate Project.</p>
+</div>
+<div>
+<h5 class="font-bold mb-6 text-on-surface">Documentation</h5>
+<ul class="space-y-3 text-on-surface-variant text-sm">
+<li class="hover:text-primary transition-colors cursor-pointer">Getting Started</li>
+<li class="hover:text-primary transition-colors cursor-pointer">Guides</li>
+<li class="hover:text-primary transition-colors cursor-pointer">Components</li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold mb-6 text-on-surface">Community</h5>
+<ul class="space-y-3 text-on-surface-variant text-sm">
+<li class="hover:text-primary transition-colors cursor-pointer">GitHub</li>
+<li class="hover:text-primary transition-colors cursor-pointer">Slack</li>
+<li class="hover:text-primary transition-colors cursor-pointer">Blog</li>
+</ul>
+</div>
+<div>
+<h5 class="font-bold mb-6 text-on-surface">Resources</h5>
+<ul class="space-y-3 text-on-surface-variant text-sm">
+<li class="hover:text-primary transition-colors cursor-pointer">Ecosystem</li>
+<li class="hover:text-primary transition-colors cursor-pointer">Case Studies</li>
+<li class="hover:text-primary transition-colors cursor-pointer">News</li>
+</ul>
+</div>
+</div>
+</footer>
+
+<script>
+        // Interactive Mouse Glow
+        const mouseGlow = document.getElementById('mouse-glow');
+        window.addEventListener('mousemove', (e) => {
+            mouseGlow.style.left = e.clientX + 'px';
+            mouseGlow.style.top = e.clientY + 'px';
+        });
+
+        // Intersection Observer for Reveal Effects
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        // Particle System
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        class Particle {
+            constructor() {
+                this.init();
+            }
+
+            init() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.radius = Math.random() * 1.5 + 0.5;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(174, 198, 255, 0.4)';
+                ctx.fill();
+            }
+        }
+
+        function createParticles() {
+            const count = Math.min(window.innerWidth / 15, 80);
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function drawLines() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 150) {
+                        ctx.beginPath();
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.strokeStyle = `rgba(174, 198, 255, ${0.15 * (1 - distance / 150)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            drawLines();
+            requestAnimationFrame(animate);
+        }
+
+        createParticles();
+        animate();
+
+        // Parallax Effect for Grid and YAML
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const grid = document.querySelector('.perspective-grid');
+            if (grid) {
+                grid.style.transform = `perspective(1000px) rotateX(20deg) translateY(${-100 + scrolled * 0.05}px) scale(1.5)`;
+            }
+            
+            document.querySelectorAll('.floating-yaml').forEach((el, index) => {
+                const speed = (index + 1) * 0.1;
+                el.style.transform = `translateY(${scrolled * speed}px)`;
+            });
+        });
+    </script>
+</body></html>
