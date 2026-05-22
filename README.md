@@ -76,3 +76,42 @@ La landing page incluida en el ConfigMap y en `index.html` es una interfaz premi
 * **Glow Interactivo:** Un efecto de iluminación dinámica que sigue el movimiento del mouse.
 * **Sistema de Partículas:** Animaciones de fondo premium renderizadas dinámicamente con Canvas.
 * **Responsive Completo:** Optimizada para dispositivos móviles y pantallas de alta definición mediante Tailwind CSS.
+
+---
+
+## 🔗 Integración con Stitch (MCP)
+
+Este proyecto ha sido vinculado y diseñado utilizando **Stitch** a través de la integración del **Model Context Protocol (MCP)**. Esto nos permite conectar el flujo de diseño visual de Stitch de forma directa con la generación automatizada de manifiestos y pantallas en Kubernetes, logrando un flujo de desarrollo continuo e interactivo.
+
+---
+
+## 🌐 ¿Cómo Visualizar la Landing Page? (Redirección de Tráfico)
+
+Por defecto, el servicio de Nginx se despliega dentro de Kubernetes con el tipo `ClusterIP` (es decir, solo es accesible internamente dentro del clúster). Para redirigir el tráfico del servidor Kubernetes y poder ver la página desde tu máquina local, tienes las siguientes opciones:
+
+### Opción 1: Redirección de Puertos (Port-Forward) - *Recomendado para pruebas rápidas*
+Puedes mapear el puerto de tu máquina local directamente al servicio de Kubernetes ejecutando el siguiente comando:
+```bash
+kubectl port-forward svc/nginx 8080:80
+```
+Una vez ejecutado, abre tu navegador e ingresa a: **[http://localhost:8080](http://localhost:8080)**.
+
+### Opción 2: Exponer el Servicio como LoadBalancer
+Si tu clúster de Kubernetes está en la nube o usas una distribución local con soporte para balanceadores de carga (como Minikube con `minikube tunnel` o Kind con MetalLB), puedes editar el archivo `apps/nginx.yaml` y añadir `type: LoadBalancer` en la especificación del servicio:
+```yaml
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+    - port: 80
+      targetPort: 80
+```
+Una vez que el clúster se reconcilie, obtén la dirección IP pública con:
+```bash
+kubectl get svc nginx
+```
+
+### Opción 3: Exponer mediante un Ingress Controller
+Para despliegues productivos, puedes crear un recurso de `Ingress` que apunte al servicio `nginx` en el puerto `80` para enrutar el tráfico externo a través de tu nombre de dominio preferido.
+
